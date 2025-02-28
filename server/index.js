@@ -5,11 +5,14 @@ import routes from './routes/index.route.js'
 import dotenv from 'dotenv'
 import cookieParser from 'cookie-parser'
 import session from 'express-session'
+
 const app = express()
 const PORT = 3000
 dotenv.config();
 app.use(cookieParser())
 app.use(express.json())
+app.use(express.urlencoded({extended: true}))
+
 app.use(cors({
     credentials:true,
     origin:"http://localhost:5173"

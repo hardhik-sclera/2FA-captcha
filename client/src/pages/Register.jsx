@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -7,25 +7,54 @@ const Register = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [email, setEmail] = useState('');
+    const [captchaToken, setCaptchaToken] = useState(null)
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const loadRecaptcha = () => {
+            const script = document.createElement('script')
+            script.src = `https://www.google.com/recaptcha/api.js?render=6LcLAuUqAAAAAPCg15VKsvtbSAsuIIoIRPegWn3R`
+            script.async = true;
+            script.defer = true;
+            document.body.appendChild(script)
+        }
+
+        loadRecaptcha()
+    }, [])
 
     const handleRegister = async(e) => {
         e.preventDefault();
-        try {
-            const response = await axios.post('/register', {
-                username,
-                password,
-                email
-            });
-            if(response) {
-                toast.success("Registration successful");
-                navigate('/2fa/setup',{ state: { email } });
+
+        if (captchaToken) {
+            alert("Captcha Token: " + captchaToken)
+
+            try {
+                const response = await axios.post('/register', {
+                    username,
+                    password,
+                    email,
+                    captchaToken
+                });
+                if(response) {
+                    toast.success("Registration successful");
+                    navigate('/2fa/setup',{ state: { email } });
+                }
+            } catch (error) {
+                toast.error("User already exists");
+                console.error(error);
             }
-        } catch (error) {
-            toast.error("User already exists");
-            console.error(error);
+        }
+        else {
+            alert("Please complete the captcha")
         }
     };
+    
+    const getCaptchaToken = () => {
+        window.grecaptcha.execute('6LcLAuUqAAAAAPCg15VKsvtbSAsuIIoIRPegWn3R', {action: 'submit'}).then((token) => {
+            console.log("Captcha token: ", token);
+            setCaptchaToken(token)
+        })
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 flex items-center justify-center p-4">
@@ -85,6 +114,10 @@ const Register = () => {
                             required
                         />
                     </div>
+
+                    <button type='button' onClick={getCaptchaToken}>
+                        Verify Captcha
+                    </button>
 
                     <button
                         type="submit"

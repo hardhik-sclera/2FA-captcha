@@ -14,13 +14,15 @@ import nodemailer from 'nodemailer'
 
 const router = Router();
 
-router.post('/register',async(req,res)=>{
-    const {body:{username,password,email}}=req;
+router.post('/register',async(req,res)=>{    
+    
+    const {body:{username,password,email, captchaToken}}=req;
     if(!username || !password || !email)
-    {
-        return res.status(400).json({error:"All fields are required"})
-    }
-   
+        {
+            return res.status(400).json({error:"All fields are required"})
+        }
+        
+    console.log("Captcha Token: ", captchaToken)
     
     const user = await users.findOne({email});
     
