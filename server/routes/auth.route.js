@@ -11,6 +11,7 @@ import qrcode from 'qrcode'
 import bcrypt from 'bcrypt'
 /* import { transporter,mailOptions } from "../helpers/email.js"; */
 import nodemailer from 'nodemailer'
+import axios from "axios";
 
 const router = Router();
 
@@ -22,56 +23,76 @@ router.post('/register',async(req,res)=>{
             return res.status(400).json({error:"All fields are required"})
         }
         
-    console.log("Captcha Token: ", captchaToken)
-    
     const user = await users.findOne({email});
-    
-    
-    if(user)
-    {
-        return res.status(400).json("User already exists ")
-    }
-    const hashedPassword= await bcrypt.hash(password,12);
-    const secret=speakeasy.generateSecret();
-    console.log(secret);
-    
-                let twoFactorSecret = secret.base32; 
-                let istwoFaAuthActive = true;
-                 /*const newUser = {
-                    _id:user._id,
-                    username: user.username,
-                    password: user.password,
-                    email: user.email,
+
+    const secretKey = process.env.RECAPTCHA_SECRET_KEY
+
+    try {
+        const response = await 
+        axios.post(`https://www.google.com/recaptcha/api/siteverify`,
+            null, {
+            params: {
+                secret: secretKey,
+                response: captchaToken
+            }
+        })
+
+        if (response.data.success && response.data.score > 0.8) {
+            console.log("Score: ", response.data.score);
+            
+            if(user)
+                {
+                    return res.status(400).json("User already exists ")
+                }
+                const hashedPassword= await bcrypt.hash(password,12);
+                const secret=speakeasy.generateSecret();
+                console.log(secret);
+                
+                            let twoFactorSecret = secret.base32; 
+                            let istwoFaAuthActive = true;
+                             /*const newUser = {
+                                _id:user._id,
+                                username: user.username,
+                                password: user.password,
+                                email: user.email,
+                                istwoFaAuthActive,
+                                twoFactorSecret
+                            }; */
+                            /* users.insert(newUser, (err, savedUser) => {
+                                if (err) {
+                                    console.error("Insert Error:", err);
+                                    return res.status(500).json({ error: "Database error" });
+                                } */
+                    const newUser = await users.insert({
+                    username,
+                    password:hashedPassword,
+                    email,
                     istwoFaAuthActive,
                     twoFactorSecret
-                }; */
-                /* users.insert(newUser, (err, savedUser) => {
-                    if (err) {
-                        console.error("Insert Error:", err);
-                        return res.status(500).json({ error: "Database error" });
-                    } */
-        const newUser = await users.insert({
-        username,
-        password:hashedPassword,
-        email,
-        istwoFaAuthActive,
-        twoFactorSecret
-    })
-    const url = speakeasy.otpauthURL({
-        secret: secret.base32,
-        issuer: "www.doogle.com",
-        encoding: "base32",
-        label: newUser.username,
-        
-    });
-    console.log(url);
-
-    const qrUrlImage = await qrcode.toDataURL(url);
-    const ss = await users.findOne({ email });
-    console.log(ss);
-
-    return res.status(200).json({ secret, qrUrlImage, newUser });
-   /*  return res.status(200).json(newUser); */
+                })
+                const url = speakeasy.otpauthURL({
+                    secret: secret.base32,
+                    issuer: "www.doogle.com",
+                    encoding: "base32",
+                    label: newUser.username,
+                    
+                });
+                console.log(url);
+            
+                const qrUrlImage = await qrcode.toDataURL(url);
+                const ss = await users.findOne({ email });
+                console.log(ss);
+            
+                return res.status(200).json({ secret, qrUrlImage, newUser });
+               /*  return res.status(200).json(newUser); */
+        } else {
+            res.status(400).json({success: false, error: response.data['error-codes']})
+        }
+    } catch (error) {
+        console.error('Error verifying reCAPTCHA: ', error)
+        res.status(500).json({success: false, error: 'Internal server error'})        
+    }   
+    
 })
 
 router.post('/login', passport.authenticate('local'), (req, res) => {

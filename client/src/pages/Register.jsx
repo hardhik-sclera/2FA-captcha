@@ -115,7 +115,9 @@ const Register = () => {
                         />
                     </div>
 
-                    <button type='button' onClick={getCaptchaToken}>
+                    <button type='button' onClick={getCaptchaToken}
+                        className="w-full px-4 py-3 text-lg font-medium text-white bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-200 ease-in-out transform hover:scale-[1.02]"
+                    >
                         Verify Captcha
                     </button>
 
