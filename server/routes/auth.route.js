@@ -15,12 +15,38 @@ import nodemailer from 'nodemailer'
 const router = Router();
 
 router.post('/register',async(req,res)=>{
-    const {body:{username,password,email}}=req;
+    const {body:{username,password,email,captchaToken}}=req;
+    if (!captchaToken) return res.status(400).json({ error: "CAPTCHA missing" });
+    console.log(captchaToken);
+    
+    try {
+      const response = await axios.post(
+        "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+        {
+          secret: process.env.CLOUDFLARE_SECRET_KEY,
+          response: captchaToken,
+        },
+        { headers: { "Content-Type": "application/json" } }
+      );
+  
+      if (response.data.success) {
+        console.log("Response token:   "+response.data.success);
+        
+       /*  res.json({ message: "CAPTCHA passed!" }); */
+      } else {
+         res.status(400).json({ error: "CAPTCHA failed" });
+      }
+    } catch (error) {
+        console.log(error);
+        
+        res.status(500).json({ error: "Verification error" });
+    }
+
     if(!username || !password || !email)
     {
         return res.status(400).json({error:"All fields are required"})
     }
-   
+    
     
     const user = await users.findOne({email});
     
@@ -67,7 +93,8 @@ router.post('/register',async(req,res)=>{
     const qrUrlImage = await qrcode.toDataURL(url);
     const ss = await users.findOne({ email });
     console.log(ss);
-
+    console.log("newUser: ",newUser);
+    
     return res.status(200).json({ secret, qrUrlImage, newUser });
    /*  return res.status(200).json(newUser); */
 })
@@ -109,6 +136,8 @@ const user = await findOneAsync({ email }); */
 
 const user = await users.find({email})    
     const currentUser=user[0]
+    console.log(user);
+    
     console.log("User: ", currentUser);
     
     if(!currentUser)
@@ -373,7 +402,9 @@ router.post('/otp',(req,res)=>{
     return res.status(400).json({ error: "Wrong token !!!" });
 
 })
-router.post('/verify-captcha', async(req, res) => {
+
+/* router.post('/verify-captcha', async(req, res) => {
+
     const { token } = req.body;
     console.log("Token: ",token);
     console.log("Secret: ",process.env.CLOUDFLARE_SECRET_KEY);
@@ -404,8 +435,9 @@ router.post('/verify-captcha', async(req, res) => {
       return res.status(500).json({ error: "Verification error" });
     }
   });
+ */
 
-router.get('/protected/home',isAuthenticated,(req,res)=>{
+  router.get('/protected/home',isAuthenticated,(req,res)=>{
     const {username}= req.userData;
     console.log(username);
     if(!username)

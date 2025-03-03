@@ -21,7 +21,7 @@ const Register = () => {
 
     try {
       // Verify CAPTCHA first
-      const captchaResponse = await axios.post("/verify-captcha", {
+     /*  const captchaResponse = await axios.post("/verify-captcha", {
       token: captchaToken,
       });
       console.log(captchaResponse.data);
@@ -29,14 +29,14 @@ const Register = () => {
       if (!captchaResponse.data) {
         alert("CAPTCHA verification failed. Please try again.");
         return;
-      }
+      } */
 
       // Register user after CAPTCHA verification
       const response = await axios.post("/register", {
         username,
         password,
         email,
-        /* captchaToken, */ // Include CAPTCHA token in registration
+        captchaToken, // Include CAPTCHA token in registration
       });
 
       if (response) {
