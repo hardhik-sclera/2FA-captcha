@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 const Register = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -20,41 +20,46 @@ const Register = () => {
         };
         loadRecaptcha();
     }, []);
+const handleRegister = async (e) => {
+    e.preventDefault();
+    const captchaToken = await getCaptchaToken();
+    // await sleep(5000);
+    
+    if (!captchaToken) {
+        toast.error("Please complete the captcha");
+        return;
+    }
 
-    const getCaptchaToken = () => {
-        window.grecaptcha.execute('6LcLAuUqAAAAAPCg15VKsvtbSAsuIIoIRPegWn3R', { action: 'submit' }).then((token) => {
-            console.log("Captcha token: ", token);
-            setCaptchaToken(token);
-            return token;
+    try {
+        const response = await axios.post('/register', {
+            username,
+            password,
+            email,
+            captchaToken
         });
-    };
-
-    const handleRegister = async (e) => {
-
-        const token= await getCaptchaToken();
-        console.log(token)
-        e.preventDefault();
-        // if (!token) {
-        //     toast.error("Please complete the captcha");
-        //     return;
-        // }
-
-        try {
-            const response = await axios.post('/register', {
-                username,
-                password,
-                email,
-                token
-            });
-            if (response) {
-                toast.success("Registration successful");
-                navigate('/2fa/setup', { state: { email } });
-            }
-        } catch (error) {
-            toast.error("User already exists");
-            console.error(error);
+        console.log(response)
+        if (response) {
+            toast.success("Registration successful");
+            navigate('/2fa/setup', { state: { email } });
         }
-    };
+    } catch (error) {
+        toast.error("User already exists");
+        console.error(error);
+    }
+};
+
+const getCaptchaToken = async () => {
+    try {
+        const token = await window.grecaptcha.execute('6LcLAuUqAAAAAPCg15VKsvtbSAsuIIoIRPegWn3R', { action: 'submit' });
+        console.log("Captcha token: ", token);
+        setCaptchaToken(token);
+        return token; // Return the token after it's received
+    } catch (error) {
+        console.error("Captcha error:", error);
+        throw error; // Throw error so it can be handled in handleRegister
+    }
+};
+
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] p-4">
@@ -108,7 +113,6 @@ const Register = () => {
                             required
                         />
                     </div>
-
 
                     <button
                         type="submit"
