@@ -21,20 +21,30 @@ const Register = () => {
         loadRecaptcha();
     }, []);
 
-    const handleRegister = async (e) => {
-        e.preventDefault();
+    const getCaptchaToken = () => {
+        window.grecaptcha.execute('6LcLAuUqAAAAAPCg15VKsvtbSAsuIIoIRPegWn3R', { action: 'submit' }).then((token) => {
+            console.log("Captcha token: ", token);
+            setCaptchaToken(token);
+            return token;
+        });
+    };
 
-        if (!captchaToken) {
-            toast.error("Please complete the captcha");
-            return;
-        }
+    const handleRegister = async (e) => {
+
+        const token= await getCaptchaToken();
+        console.log(token)
+        e.preventDefault();
+        // if (!token) {
+        //     toast.error("Please complete the captcha");
+        //     return;
+        // }
 
         try {
             const response = await axios.post('/register', {
                 username,
                 password,
                 email,
-                captchaToken
+                token
             });
             if (response) {
                 toast.success("Registration successful");
@@ -44,13 +54,6 @@ const Register = () => {
             toast.error("User already exists");
             console.error(error);
         }
-    };
-
-    const getCaptchaToken = () => {
-        window.grecaptcha.execute('6LcLAuUqAAAAAPCg15VKsvtbSAsuIIoIRPegWn3R', { action: 'submit' }).then((token) => {
-            console.log("Captcha token: ", token);
-            setCaptchaToken(token);
-        });
     };
 
     return (
@@ -106,13 +109,6 @@ const Register = () => {
                         />
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={getCaptchaToken}
-                        className="w-full px-4 py-3 text-lg font-medium text-white bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg hover:from-cyan-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 transition-all duration-200 ease-in-out transform hover:scale-[1.03] shadow-md shadow-cyan-500/50"
-                    >
-                        Verify Captcha
-                    </button>
 
                     <button
                         type="submit"

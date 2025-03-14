@@ -17,7 +17,7 @@ const router = Router();
 
 router.post('/register',async(req,res)=>{    
     
-    const {body:{username,password,email, captchaToken}}=req;
+    const {body:{username,password,email, token}}=req;
     if(!username || !password || !email)
         {
             return res.status(400).json({error:"All fields are required"})
@@ -35,7 +35,7 @@ router.post('/register',async(req,res)=>{
             null, {
             params: {
                 secret: process.env.RECAPTCHA_SECRET_KEY,
-                response: captchaToken
+                response: token
             }
         })
 
