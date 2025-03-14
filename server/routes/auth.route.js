@@ -25,28 +25,32 @@ router.post('/register',async(req,res)=>{
         
     const user = await users.findOne({email});
 
-    const secretKey = process.env.RECAPTCHA_SECRET_KEY
-
+    
+        // console.log(secretKey);
+        
+        
     try {
         const response = await 
         axios.post(`https://www.google.com/recaptcha/api/siteverify`,
             null, {
             params: {
-                secret: secretKey,
+                secret: process.env.RECAPTCHA_SECRET_KEY,
                 response: captchaToken
             }
         })
 
         if (response.data.success && response.data.score > 0.8) {
-            console.log("Score: ", response.data.score);
+            // console.log("Score: ", response.data.score);
             
             if(user)
                 {
+                    console.log("User: ",user);
+                    
                     return res.status(400).json("User already exists ")
                 }
                 const hashedPassword= await bcrypt.hash(password,12);
                 const secret=speakeasy.generateSecret();
-                console.log(secret);
+                // console.log(secret);
                 
                             let twoFactorSecret = secret.base32; 
                             let istwoFaAuthActive = true;
@@ -94,24 +98,45 @@ router.post('/register',async(req,res)=>{
     }   
     
 })
-
-router.post('/login', passport.authenticate('local'), (req, res) => {
-    const user=req.user
-    console.log("Login ",req.session.passport);
-    
-   
-    /* req.session.destroy((err) => {
-        if (err) {
-            console.log('err', err);
-            return res.status(400).json({ error: "error deleting session" });
+const verifyRecaptcha = async (captchaToken) => {
+    const response = await axios.post(`https://www.google.com/recaptcha/api/siteverify`, null, {
+        params: {
+            secret: process.env.RECAPTCHA_SECRET_KEY,
+            response: captchaToken
         }
     });
-    res.clearCookie('connect.sid'); */
-    return res.status(200).json({
-        _id: user._id,
-        username: user.username,
-        email: user.email,
-    });
+
+    return response.data;
+};
+router.post('/login', async (req, res, next) => {
+    console.log("Login Request: ", req.body);
+    const { username, password, captchaToken } = req.body;
+
+    const captchaResponse = await verifyRecaptcha(captchaToken);
+    console.log(captchaResponse)
+    if (captchaResponse.success===false) {
+        return res.status(400).json({ error: "Captcha verification failed", details: captchaResponse['error-codes'] });
+    }
+        const { success, score } = captchaResponse;
+    //  console.log(captchaVerifyResponse.data);
+        if (!success || score < 0.5) {  // Adjust score threshold if needed
+            return res.status(401).json({ error: "Captcha verification failed" });
+        }
+
+        // If Captcha is valid, proceed with authentication
+        passport.authenticate('local', (err, user, info) => {
+            if (err) return next(err);
+            if (!user) return res.status(401).json({ error: "Invalid credentials" });
+
+            req.logIn(user, (err) => {
+                if (err) return next(err);
+                return res.status(200).json({
+                    _id: user._id,
+                    username: user.username,
+                    email: user.email,
+                });
+            });
+        })(req, res, next);
 });
 
 router.post('/2fa/setup',async(req,res)=>{

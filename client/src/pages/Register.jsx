@@ -7,133 +7,126 @@ const Register = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [email, setEmail] = useState('');
-    const [captchaToken, setCaptchaToken] = useState(null)
+    const [captchaToken, setCaptchaToken] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
         const loadRecaptcha = () => {
-            const script = document.createElement('script')
-            script.src = `https://www.google.com/recaptcha/api.js?render=6LcLAuUqAAAAAPCg15VKsvtbSAsuIIoIRPegWn3R`
+            const script = document.createElement('script');
+            script.src = `https://www.google.com/recaptcha/api.js?render=6LcLAuUqAAAAAPCg15VKsvtbSAsuIIoIRPegWn3R`;
             script.async = true;
             script.defer = true;
-            document.body.appendChild(script)
-        }
+            document.body.appendChild(script);
+        };
+        loadRecaptcha();
+    }, []);
 
-        loadRecaptcha()
-    }, [])
-
-    const handleRegister = async(e) => {
+    const handleRegister = async (e) => {
         e.preventDefault();
 
-        if (captchaToken) {
-            alert("Captcha Token: " + captchaToken)
-
-            try {
-                const response = await axios.post('/register', {
-                    username,
-                    password,
-                    email,
-                    captchaToken
-                });
-                if(response) {
-                    toast.success("Registration successful");
-                    navigate('/2fa/setup',{ state: { email } });
-                }
-            } catch (error) {
-                toast.error("User already exists");
-                console.error(error);
-            }
+        if (!captchaToken) {
+            toast.error("Please complete the captcha");
+            return;
         }
-        else {
-            alert("Please complete the captcha")
+
+        try {
+            const response = await axios.post('/register', {
+                username,
+                password,
+                email,
+                captchaToken
+            });
+            if (response) {
+                toast.success("Registration successful");
+                navigate('/2fa/setup', { state: { email } });
+            }
+        } catch (error) {
+            toast.error("User already exists");
+            console.error(error);
         }
     };
-    
+
     const getCaptchaToken = () => {
-        window.grecaptcha.execute('6LcLAuUqAAAAAPCg15VKsvtbSAsuIIoIRPegWn3R', {action: 'submit'}).then((token) => {
+        window.grecaptcha.execute('6LcLAuUqAAAAAPCg15VKsvtbSAsuIIoIRPegWn3R', { action: 'submit' }).then((token) => {
             console.log("Captcha token: ", token);
-            setCaptchaToken(token)
-        })
-    }
+            setCaptchaToken(token);
+        });
+    };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 flex items-center justify-center p-4">
-            <div className="w-full max-w-md p-8 space-y-6 bg-white/90 backdrop-blur-sm rounded-lg shadow-2xl">
-                <div className="text-center space-y-2">
-                    <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+        <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] p-4">
+            <div className="w-full max-w-md p-8 space-y-6 bg-[#131313] bg-opacity-90 backdrop-blur-md shadow-2xl rounded-lg border border-[#2a2a2a]">
+                <div className="text-center space-y-3">
+                    <h2 className="text-4xl font-extrabold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
                         Create Account
                     </h2>
-                    <p className="text-gray-600">Please fill in your details to register</p>
+                    <p className="text-gray-400 text-sm">Fill in your details to register</p>
                 </div>
-                
-                <form className="space-y-5" onSubmit={handleRegister}>
-                    <div className="space-y-2">
-                        <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                            Username
-                        </label>
+
+                <form className="space-y-6" onSubmit={handleRegister}>
+                    <div>
+                        <label htmlFor="username" className="block text-sm font-medium text-gray-300">Username</label>
                         <input
                             type="text"
                             id="username"
                             name="username"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
-                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ease-in-out"
+                            className="w-full px-4 py-3 mt-1 rounded-lg border border-gray-700 bg-[#1a1a1a] text-gray-200 focus:ring-2 focus:ring-cyan-500 focus:border-transparent placeholder-gray-500 transition-all"
                             placeholder="Enter your username"
                             required
                         />
                     </div>
-                    
-                    <div className="space-y-2">
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                            Email Address
-                        </label>
+
+                    <div>
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-300">Email Address</label>
                         <input
                             type="email"
                             id="email"
                             name="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ease-in-out"
+                            className="w-full px-4 py-3 mt-1 rounded-lg border border-gray-700 bg-[#1a1a1a] text-gray-200 focus:ring-2 focus:ring-cyan-500 focus:border-transparent placeholder-gray-500 transition-all"
                             placeholder="Enter your email"
                             required
                         />
                     </div>
 
-                    <div className="space-y-2">
-                        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                            Password
-                        </label>
+                    <div>
+                        <label htmlFor="password" className="block text-sm font-medium text-gray-300">Password</label>
                         <input
                             type="password"
                             id="password"
                             name="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ease-in-out"
+                            className="w-full px-4 py-3 mt-1 rounded-lg border border-gray-700 bg-[#1a1a1a] text-gray-200 focus:ring-2 focus:ring-cyan-500 focus:border-transparent placeholder-gray-500 transition-all"
                             placeholder="Create a password"
                             required
                         />
                     </div>
 
-                    <button type='button' onClick={getCaptchaToken}
-                        className="w-full px-4 py-3 text-lg font-medium text-white bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-200 ease-in-out transform hover:scale-[1.02]"
+                    <button
+                        type="button"
+                        onClick={getCaptchaToken}
+                        className="w-full px-4 py-3 text-lg font-medium text-white bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg hover:from-cyan-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 transition-all duration-200 ease-in-out transform hover:scale-[1.03] shadow-md shadow-cyan-500/50"
                     >
                         Verify Captcha
                     </button>
 
                     <button
                         type="submit"
-                        className="w-full px-4 py-3 text-lg font-medium text-white bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-200 ease-in-out transform hover:scale-[1.02]"
+                        className="w-full px-4 py-3 text-lg font-medium text-white bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg hover:from-cyan-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 transition-all duration-200 ease-in-out transform hover:scale-[1.03] shadow-md shadow-cyan-500/50"
                     >
                         Create Account
                     </button>
 
-                    <div className="text-center text-sm text-gray-600">
+                    <div className="text-center text-sm text-gray-400">
                         Already have an account?{' '}
                         <button
                             type="button"
                             onClick={() => navigate('/login')}
-                            className="text-purple-600 hover:text-purple-700 font-medium focus:outline-none"
+                            className="text-cyan-400 hover:text-cyan-500 font-medium focus:outline-none"
                         >
                             Sign in
                         </button>
